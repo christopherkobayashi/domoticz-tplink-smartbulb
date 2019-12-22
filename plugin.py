@@ -61,11 +61,9 @@ class TpLinkPlugin:
         Domoticz.Device(Name="switch", Unit=1, TypeName="Switch", Used=1).Create()
         Domoticz.Log("Tp-Link smart bulb device created")
 
-#        if len(Devices) <= 1:
-         # Create more devices here
-#            Domoticz.Device(Name="emeter current (A)", Unit=2, Type=243, Subtype=23).Create()
-#            Domoticz.Device(Name="emeter voltage (V)", Unit=3, Type=243, Subtype=8).Create()
-#            Domoticz.Device(Name="emeter power (W)", Unit=4, Type=243, Subtype=31, Image=1, Used=1).Create()
+        if len(Devices) <= 1:
+        # Create more devices here
+            Domoticz.Device(Name="emeter power (W)", Unit=2, Type=243, Subtype=31, Image=1, Used=1).Create()
 
         state = self.bulb.is_on
         if state is True:
@@ -89,16 +87,15 @@ class TpLinkPlugin:
         if command.lower() == 'on':
             self.bulb.turn_on()
             state = (1, '100')
-
+            err_code = self.bulb.is_on
         elif command.lower() == 'off':
             self.bulb.turn_off()
             state = (0, '0')
+            err_code = self.bulb.is_off
 
-# CK    err_code = result.get('smartlife.iot.smartbulb.lightingservice', {}).get('transition_light_state', {}).get('err_code', 1)
-        err_code = 0
-
-        if err_code == 0:
-            Devices[1].Update(*state) # Reset counter so we trigger emeter poll next heartbeat
+        if err_code is True:
+            Devices[1].Update(*state)
+            # Reset counter so we trigger emeter poll next heartbeat
             self.heartbeatcounter = 0
 
     def onNotification(self, Name, Subject, Text, Status, Priority, Sound, ImageFile):
@@ -113,22 +110,11 @@ class TpLinkPlugin:
         self.heartbeatcounter += 1
 
     def update_emeter_values(self):
-#        cmd = { "emeter": { "get_realtime": {} } }
-#        result = self._send_json_cmd(json.dumps(cmd))
-#        Domoticz.Debug("got response: {}".format(result))
-#        realtime_result = self.bulb.get_emeter_realtime()
+        realtime_result = self.bulb.get_emeter_realtime()
 
-#        if realtime_result is not False:
-#            Devices[2].Update(nValue=int(1 * realtime_result['current']), sValue=str(realtime_result['current']))
-#            Devices[3].Update(nValue=int(1 * realtime_result['voltage']), sValue=str(realtime_result['voltage']))
-#            Devices[4].Update(nValue=int(1 * realtime_result['power']), sValue=str(realtime_result['power']))
+        if realtime_result is not False:
+            Devices[2].Update(nValue=0, sValue=str(realtime_result['power_mw'] / 1000))
         return
-
-    def get_switch_state(self):
-        if self.bulb.is_on:
-            return on
-        else:
-            return off
 
 global _plugin
 _plugin = TpLinkPlugin()
