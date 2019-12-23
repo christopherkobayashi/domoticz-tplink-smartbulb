@@ -10,7 +10,7 @@
 <plugin key="domoticz-tplink-smartdevice" name="TP-Link SmartDevice" version="0.0.1" author="wileyc" wikilink="http://www.domoticz.com/wiki/plugins/plugin.html" externallink="https://www.google.com/">
     <description>
         <h2>TP-Link SmartDevice</h2>
-        <ul style="list-sytel-type:square">
+        <ul style="list-style-type:square">
             <li>on/off switching</li>
         </ul>
         <h3>Devices</h3>
@@ -48,13 +48,20 @@ import Domoticz
 class TpLinkPlugin:
     enabled = False
     connection = None
+    alive = False
 
     def __init__(self):
         self.interval = 6  # 6*10 seconds
         self.heartbeatcounter = 0
 
     def onStart(self):
-        self.bulb = Discover.discover_single(Parameters["Address"])
+        try:
+            self.bulb = Discover.discover_single(Parameters["Address"])
+        except:
+            Domoticz.Log("is not available")
+            return
+        Domoticz.Log("is available")
+        self.alive = True
         if Parameters["Mode6"] == "Debug":
             Domoticz.Debugging(1)
             DumpConfigToLog()
@@ -80,22 +87,23 @@ class TpLinkPlugin:
         Domoticz.Log("onMessage called")
 
     def onCommand(self, unit, command, level, hue):
-        Domoticz.Log("onCommand called for Unit " +
+        if self.alive:
+            Domoticz.Log("onCommand called for Unit " +
                      str(unit) + ": Parameter '" + str(command) + "', Level: " + str(level))
 
-        if command.lower() == 'on':
-            self.bulb.turn_on()
-            state = (1, '100')
-            err_code = self.bulb.is_on
-        elif command.lower() == 'off':
-            self.bulb.turn_off()
-            state = (0, '0')
-            err_code = self.bulb.is_off
+            if command.lower() == 'on':
+                self.bulb.turn_on()
+                state = (1, '100')
+                err_code = self.bulb.is_on
+            elif command.lower() == 'off':
+                self.bulb.turn_off()
+                state = (0, '0')
+                err_code = self.bulb.is_off
 
-        if err_code is True:
-            Devices[1].Update(*state)
-            # Reset counter so we trigger emeter poll next heartbeat
-            self.heartbeatcounter = 0
+            if err_code is True:
+                Devices[1].Update(*state)
+                # Reset counter so we trigger emeter poll next heartbeat
+                self.heartbeatcounter = 0
 
     def onNotification(self, Name, Subject, Text, Status, Priority, Sound, ImageFile):
         Domoticz.Log("Notification: " + Name + "," + Subject + "," + Text + "," + Status + "," + str(Priority) + "," + Sound + "," + ImageFile)
@@ -104,19 +112,18 @@ class TpLinkPlugin:
         Domoticz.Log("onDisconnect called")
 
     def onHeartbeat(self):
-        if (self.heartbeatcounter % self.interval == 0) and self.bulb.has_emeter:
-            self.update_emeter_values()
-        self.heartbeatcounter += 1
-        if self.bulb.is_on:
-            Devices[1].Update(1, '100')
+        if self.alive:
+            if (self.heartbeatcounter % self.interval == 0) and self.bulb.has_emeter:
+                realtime_result = self.bulb.get_emeter_realtime()
+                if realtime_result is not False:
+                    Devices[2].Update(nValue=0, sValue=str(realtime_result['power_mw'] / 1000))
+            self.heartbeatcounter += 1
+            if self.bulb.is_on:
+                Devices[1].Update(1, '100')
+            else:
+                Devices[1].Update(0, '0')
         else:
-            Devices[1].Update(0, '0')
-
-    def update_emeter_values(self):
-        realtime_result = self.bulb.get_emeter_realtime()
-        if realtime_result is not False:
-            Devices[2].Update(nValue=0, sValue=str(realtime_result['power_mw'] / 1000))
-        return
+            onStart()
 
 global _plugin
 _plugin = TpLinkPlugin()
