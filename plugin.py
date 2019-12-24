@@ -47,7 +47,6 @@ import Domoticz
 
 class TpLinkPlugin:
     enabled = False
-    connection = None
     alive = False
 
     def __init__(self):
@@ -67,7 +66,7 @@ class TpLinkPlugin:
             DumpConfigToLog()
 
         Domoticz.Device(Name="switch", Unit=1, TypeName="Switch", Used=1).Create()
-        Domoticz.Log("Tp-Link smart bulb device created")
+        Domoticz.Log("Tp-Link SmartDevice created")
 
         if self.bulb.has_emeter and len(Devices) <= 1:
             Domoticz.Device(Name="emeter power (W)", Unit=2, Type=243, Subtype=31, Image=1, Used=1).Create()
@@ -116,6 +115,7 @@ class TpLinkPlugin:
             if (self.heartbeatcounter % self.interval == 0) and self.bulb.has_emeter:
                 realtime_result = self.bulb.get_emeter_realtime()
                 if realtime_result is not False:
+                    Domoticz.Log("power:", str(realtime_result['power_mw'] / 1000))
                     Devices[2].Update(nValue=0, sValue=str(realtime_result['power_mw'] / 1000))
             self.heartbeatcounter += 1
             if self.bulb.is_on:
