@@ -7,7 +7,7 @@
 # Author: Christopher KOBAYASHI
 #
 """
-<plugin key="domoticz-tplink-smartdevice" name="TP-Link SmartDevice" version="0.0.1" author="wileyc" wikilink="http://www.domoticz.com/wiki/plugins/plugin.html" externallink="https://www.google.com/">
+<plugin key="tplink-smartdevice" name="TP-Link SmartDevice" version="0.0.1" author="wileyc" wikilink="http://www.domoticz.com/wiki/plugins/plugin.html" externallink="https://www.google.com/">
     <description>
         <h2>TP-Link SmartDevice</h2>
         <ul style="list-style-type:square">
@@ -66,7 +66,7 @@ class TpLinkPlugin:
             DumpConfigToLog()
 
         Domoticz.Device(Name="switch", Unit=1, TypeName="Switch", Used=1).Create()
-        Domoticz.Log("Tp-Link SmartDevice created")
+        Domoticz.Log("TP-Link SmartDevice created")
 
         if self.bulb.has_emeter and len(Devices) <= 1:
             Domoticz.Device(Name="emeter power (W)", Unit=2, Type=243, Subtype=31, Image=1, Used=1).Create()
