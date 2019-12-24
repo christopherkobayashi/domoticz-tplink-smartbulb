@@ -1,8 +1,16 @@
 # Domoticz TP-Link Wi-Fi Smart Device plugin
 #
-# Plugin based "Domoticz TP-Link Wi-Fi Smart Plug plugin" by Dan Hallgren, which itself
+# Based "Domoticz TP-Link Wi-Fi Smart Plug plugin" by Dan Hallgren, which itself
 # was based on the reverse-engineering work of Lubomir Stroetmann and Tobias Esser.
 # (https://www.softscheck.com/en/reverse-engineering-tp-link-hs110/)
+#
+# This plugin leverages the excellent pyHS100 library, which abstracts the various
+# implementation variances of the TP-Link product line into an easily-controlled unified
+# object.
+#
+# Devices that support power metering will automatically have their statistics collected.
+# The plugin will attempt to enable devices that are configured but unavailable at startup
+# each heartbeat event (currently set to sixty seconds).
 #
 # Author: Christopher KOBAYASHI
 #
