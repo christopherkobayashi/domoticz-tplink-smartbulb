@@ -1,6 +1,6 @@
 # Domoticz TP-Link Wi-Fi Smart Device plugin
 #
-# Based "Domoticz TP-Link Wi-Fi Smart Plug plugin" by Dan Hallgren, which itself
+# Based on "Domoticz TP-Link Wi-Fi Smart Plug plugin" by Dan Hallgren, which itself
 # was based on the reverse-engineering work of Lubomir Stroetmann and Tobias Esser.
 # (https://www.softscheck.com/en/reverse-engineering-tp-link-hs110/)
 #
