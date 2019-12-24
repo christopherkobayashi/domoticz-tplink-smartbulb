@@ -65,11 +65,12 @@ class TpLinkPlugin:
             Domoticz.Debugging(1)
             DumpConfigToLog()
 
-        Domoticz.Device(Name="switch", Unit=1, TypeName="Switch", Used=1).Create()
+        if len(Devices) == 0:
+            Domoticz.Device(Name="switch", Unit=1, TypeName="Switch", Used=1).Create()
         Domoticz.Log("TP-Link SmartDevice created")
 
-        if self.bulb.has_emeter and len(Devices) <= 1:
-            Domoticz.Device(Name="emeter power (W)", Unit=2, Type=243, Subtype=31, Image=1, Used=1).Create()
+        if self.bulb.has_emeter and len(Devices) < 2:
+            Domoticz.Device(Name="emeter power (W)", Unit=2, Type=243, Subtype=29, Image=1, Used=1).Create()
 
         if self.bulb.is_on:
             Devices[1].Update(1, '100')
@@ -115,7 +116,7 @@ class TpLinkPlugin:
             if (self.heartbeatcounter % self.interval == 0) and self.bulb.has_emeter:
                 realtime_result = self.bulb.get_emeter_realtime()
                 if realtime_result is not False:
-                    Domoticz.Log("power:", str(realtime_result['power_mw'] / 1000))
+                    Domoticz.Log("power consumption: " + str(realtime_result['power_mw'] / 1000) + "W")
                     Devices[2].Update(nValue=0, sValue=str(realtime_result['power_mw'] / 1000))
             self.heartbeatcounter += 1
             if self.bulb.is_on:
