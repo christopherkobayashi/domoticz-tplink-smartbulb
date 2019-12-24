@@ -1,4 +1,4 @@
-# Domoticz TP-Link Wi-Fi Smart Device plugin
+# Domoticz TP-Link Wi-Fi SmartDevice plugin
 #
 # Based on "Domoticz TP-Link Wi-Fi Smart Plug plugin" by Dan Hallgren, which itself
 # was based on the reverse-engineering work of Lubomir Stroetmann and Tobias Esser.
@@ -19,7 +19,7 @@
         name="TP-Link SmartDevice"
         version="0.0.1"
         author="Christopher KOBAYASHI"
-        wikilink="http://www.domoticz.com/wiki/plugins/plugin.html"
+        wikilink="https://www.domoticz.com/wiki/plugins/plugin.html"
         externallink="https://github.com/christopherkobayashi/domoticz-tplink-smartbulb/blob/master/plugin.py"
     >
     <description>
@@ -79,22 +79,13 @@ class TpLinkPlugin:
             Domoticz.Debugging(1)
             DumpConfigToLog()
 
-        if len(Devices) == 0:
-            Domoticz.Device(Name="switch", Unit=1, TypeName="Switch", Used=1).Create()
-        Domoticz.Log("TP-Link SmartDevice created")
+        if self.bulb.is_dimmable:
+            Devices[1].Update(nValue = self.bulb.is_on, sValue = str(self.bulb.brightness), TypeName="Dimmer", Used=1)
+        else:
+            Devices[1].Update(nValue = self.bulb.is_on, sValue = str(self.bulb.is_on * 100), TypeName="Switch", Used=1)
 
         if self.bulb.has_emeter and len(Devices) < 2:
             Domoticz.Device(Name="power consumed (watts)", Unit=2, Type=243, Subtype=29, Image=1, Used=1).Create()
-
-#        if self.bulb.is_dimmable and len(Devices) < 3:
-#            Domoticz.Device(Name="dimmer", Unit=3, Type=244, Subtype=62, Switchtype=7, Used=1).Create()
-#            brightness = self.bulb.brightness
-#            Devices[3].Update(nValue=(brightness / 100), sValue=str(brightness))
-
-        if self.bulb.is_on:
-            Devices[1].Update(nValue=1, sValue='100')
-        else:
-            Devices[1].Update(nValue=0, sValue='0')
 
     def onStop(self):
         Domoticz.Log("onStop called")
@@ -112,21 +103,22 @@ class TpLinkPlugin:
 
             if command.lower() == 'on':
                 self.bulb.turn_on()
-                state = (nValue=1, sValue='100')
+                state = (self.bulb.is_on, '100')
                 err_code = self.bulb.is_on
             elif command.lower() == 'off':
                 self.bulb.turn_off()
-                state = (nValue=0, sValue='0')
+                state = (self.bulb.is_on, '0')
                 err_code = self.bulb.is_off
-#            elif command.lower() == 'set level':
-#                self.bulb.set_brightness(level)
-#                state = (nValue=(level / 100), sValue=str(level))
-#                err_code = True
+            elif command.lower() == 'set level':
+                self.bulb.set_brightness(level)
+                state = (self.bulb.is_on, str(level))
+                err_code = True
             else:
                 err_code = False
 
             if err_code is True:
-                Devices[unit].Update(*state) # but should we update both slider and switch?
+#                Devices[unit].Update(*state) # but should we update both slider and switch?
+                Devices[unit].Update(nValue = self.bulb.is_on, sValue=str(level))
                 # Reset counter so we trigger emeter poll next heartbeat
                 self.heartbeatcounter = 0
 
@@ -144,14 +136,11 @@ class TpLinkPlugin:
                     Domoticz.Log("power consumption: " + str(realtime_result['power_mw'] / 1000) + "W")
                     Devices[2].Update(nValue=0, sValue=str(realtime_result['power_mw'] / 1000))
             self.heartbeatcounter += 1
-            if self.bulb.is_on:
-                Devices[1].Update(1, '100')
+            if self.bulb.is_dimmable:
+                brightness = self.bulb.brightness
             else:
-                Devices[1].Update(0, '0')
-#            if self.bulb.is_dimmable:
-#                brightness = self.bulb.brightness
-#                Domoticz.Log("brightness: " + str(brightness))
-#               Devices[3].Update(brightness, str(brightness))
+                brightness = self.bulb.is_on * 100
+            Devices[1].Update(nValue=self.bulb.is_on, sValue=str(brightness))
         else:
             onStart()
 
