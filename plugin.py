@@ -85,10 +85,21 @@ class TpLinkPlugin:
         else:
             brightness = self.bulb.is_on * 100
             device_type = 'Switch'
-        Devices[1].Update(nValue = self.bulb.is_on, sValue = str(brightness), TypeName=device_type, Used=1)
+        if len(Devices) < 1:
+            Domoticz.Device(Name=device_type, Description=self.bulb.model, Unit=1, Type=device_type, Image=1, Used=1).Create()
+        else:
+            Devices[1].Update(nValue = self.bulb.is_on, sValue = str(brightness), TypeName=device_type, Description=self.bulb.model, Used=1)
 
-        if self.bulb.has_emeter and len(Devices) < 2:
-            Domoticz.Device(Name="power consumed (watts)", Unit=2, Type=243, Subtype=29, Image=1, Used=1).Create()
+        if self.bulb.has_emeter:
+            if len(Devices) < 2:
+                Domoticz.Device(Name="power consumed (watts)", Unit=2, TypeName='kWh', Image=1, Used=1).Create()
+            else:
+                realtime_result = self.bulb.get_emeter_realtime()
+                Devices[2].Update(nValue=0, sValue=str(realtime_result['power_mw'] / 1000), TypeName='kWh', Image=1, Used=1)
+        # Reap any devices that might have been erroneously created
+        if len(Devices) > 2:
+            for i in range (3, len(Devices)+1):
+               Devices[i].Delete()
 
     def onStop(self):
         Domoticz.Log("onStop called")
@@ -114,7 +125,7 @@ class TpLinkPlugin:
                 if self.bulb.is_off:
                     self.bulb.turn_on()
                 self.bulb.set_brightness(level)
-                okay = True
+                okay = self.bulb.is_on
             else:
                 okay = False
 
