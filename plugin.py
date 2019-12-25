@@ -80,9 +80,12 @@ class TpLinkPlugin:
             DumpConfigToLog()
 
         if self.bulb.is_dimmable:
-            Devices[1].Update(nValue = self.bulb.is_on, sValue = str(self.bulb.brightness), TypeName="Dimmer", Used=1)
+            brightness = self.bulb.brightness
+            device_type = 'Dimmer'
         else:
-            Devices[1].Update(nValue = self.bulb.is_on, sValue = str(self.bulb.is_on * 100), TypeName="Switch", Used=1)
+            brightness = self.bulb.is_on * 100
+            device_type = 'Switch'
+        Devices[1].Update(nValue = self.bulb.is_on, sValue = str(brightness), TypeName=device_type, Used=1)
 
         if self.bulb.has_emeter and len(Devices) < 2:
             Domoticz.Device(Name="power consumed (watts)", Unit=2, Type=243, Subtype=29, Image=1, Used=1).Create()
@@ -103,21 +106,19 @@ class TpLinkPlugin:
 
             if command.lower() == 'on':
                 self.bulb.turn_on()
-                state = (self.bulb.is_on, '100')
-                err_code = self.bulb.is_on
+                okay = self.bulb.is_on
             elif command.lower() == 'off':
                 self.bulb.turn_off()
-                state = (self.bulb.is_on, '0')
-                err_code = self.bulb.is_off
+                okay = self.bulb.is_off
             elif command.lower() == 'set level':
+                if self.bulb.is_off:
+                    self.bulb.turn_on()
                 self.bulb.set_brightness(level)
-                state = (self.bulb.is_on, str(level))
-                err_code = True
+                okay = True
             else:
-                err_code = False
+                okay = False
 
-            if err_code is True:
-#                Devices[unit].Update(*state) # but should we update both slider and switch?
+            if okay is True:
                 Devices[unit].Update(nValue = self.bulb.is_on, sValue=str(level))
                 # Reset counter so we trigger emeter poll next heartbeat
                 self.heartbeatcounter = 0
