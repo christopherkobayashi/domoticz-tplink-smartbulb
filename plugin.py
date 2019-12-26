@@ -99,7 +99,7 @@ class TpLinkPlugin:
         # Reap any devices that might have been erroneously created
         if len(Devices) > 2:
             for i in range (3, len(Devices)+1):
-               Devices[i].Delete()
+                Devices[i].Delete()
 
     def onStop(self):
         Domoticz.Log("onStop called")
@@ -115,19 +115,23 @@ class TpLinkPlugin:
             Domoticz.Log("onCommand called for Unit " +
                      str(unit) + ": Parameter '" + str(command) + "', Level: " + str(level))
 
-            if command.lower() == 'on':
-                self.bulb.turn_on()
-                okay = self.bulb.is_on
-            elif command.lower() == 'off':
-                self.bulb.turn_off()
-                okay = self.bulb.is_off
-            elif command.lower() == 'set level':
-                if self.bulb.is_off:
+            try:
+                if command.lower() == 'on':
                     self.bulb.turn_on()
-                self.bulb.set_brightness(level)
-                okay = self.bulb.is_on
-            else:
-                okay = False
+                    okay = self.bulb.is_on
+                elif command.lower() == 'off':
+                    self.bulb.turn_off()
+                    okay = self.bulb.is_off
+                elif command.lower() == 'set level':
+                    if self.bulb.is_off:
+                        self.bulb.turn_on()
+                    self.bulb.set_brightness(level)
+                    okay = self.bulb.is_on
+                else:
+                    okay = False
+            except:
+                self.alive = False
+                return
 
             if okay is True:
                 Devices[unit].Update(nValue = self.bulb.is_on, sValue=str(level))
@@ -143,7 +147,11 @@ class TpLinkPlugin:
     def onHeartbeat(self):
         if self.alive:
             if (self.heartbeatcounter % self.interval == 0) and self.bulb.has_emeter:
-                realtime_result = self.bulb.get_emeter_realtime()
+                try:
+                    realtime_result = self.bulb.get_emeter_realtime()
+                except:
+                    self.alive = False
+                    return
                 if realtime_result is not False:
                     Domoticz.Log("power consumption: " + str(realtime_result['power_mw'] / 1000) + "W")
                     Devices[2].Update(nValue=0, sValue=str(realtime_result['power_mw'] / 1000))
