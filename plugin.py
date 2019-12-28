@@ -82,13 +82,15 @@ class TpLinkPlugin:
         if self.bulb.is_dimmable:
             brightness = self.bulb.brightness
             device_type = 'Dimmer'
+            n_Value = self.bulb.is_on * 2
         else:
             brightness = self.bulb.is_on * 100
             device_type = 'Switch'
+            n_Value = self.bulb.is_on * 1
         if len(Devices) < 1:
             Domoticz.Device(Name=device_type, Description=self.bulb.model, Unit=1, Type=device_type, Image=1, Used=1).Create()
         else:
-            Devices[1].Update(nValue = self.bulb.is_on, sValue = str(brightness), TypeName=device_type, Description=self.bulb.model, Used=1)
+            Devices[1].Update(nValue = n_Value, sValue = str(brightness), TypeName=device_type, Description=self.bulb.model, Used=1)
 
         if self.bulb.has_emeter:
             if len(Devices) < 2:
@@ -114,11 +116,15 @@ class TpLinkPlugin:
         if self.alive:
             Domoticz.Log("onCommand called for Unit " +
                      str(unit) + ": Parameter '" + str(command) + "', Level: " + str(level))
-
+            n_Value = 0
+            okay = False
             try:
                 if command.lower() == 'on':
                     self.bulb.turn_on()
                     okay = self.bulb.is_on
+                    n_Value = 1
+                    if self.bulb.is_dimmable:
+                        n_Value = 2
                 elif command.lower() == 'off':
                     self.bulb.turn_off()
                     okay = self.bulb.is_off
@@ -127,14 +133,13 @@ class TpLinkPlugin:
                         self.bulb.turn_on()
                     self.bulb.set_brightness(level)
                     okay = self.bulb.is_on
-                else:
-                    okay = False
+                    n_Value = 2
             except:
                 self.alive = False
                 return
 
             if okay is True:
-                Devices[unit].Update(nValue = self.bulb.is_on, sValue=str(level))
+                Devices[unit].Update(nValue = n_Value, sValue=str(level))
                 # Reset counter so we trigger emeter poll next heartbeat
                 self.heartbeatcounter = 0
 
@@ -158,10 +163,13 @@ class TpLinkPlugin:
             self.heartbeatcounter += 1
             if self.bulb.is_dimmable:
                 brightness = self.bulb.brightness
+                n_Value = self.bulb.is_on * 2
             else:
                 brightness = self.bulb.is_on * 100
-            Devices[1].Update(nValue=self.bulb.is_on, sValue=str(brightness))
+                n_Value = self.bulb.is_on * 1
+            Devices[1].Update(nValue=n_Value, sValue=str(brightness))
         else:
+            Devices[1].Update(nValue=0, sValue="Unavailable")
             onStart()
 
 global _plugin
