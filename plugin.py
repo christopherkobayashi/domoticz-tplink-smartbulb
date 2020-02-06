@@ -58,10 +58,12 @@ from pyHS100 import (
 )
 
 import Domoticz
+import time
 
 class TpLinkPlugin:
     enabled = False
     alive = False
+    brightness = 0
 
     def __init__(self):
         self.interval = 6  # 6*10 seconds
@@ -80,17 +82,17 @@ class TpLinkPlugin:
             DumpConfigToLog()
 
         if self.bulb.is_dimmable:
-            brightness = self.bulb.brightness
+            self.brightness = self.bulb.brightness
             device_type = 'Dimmer'
             n_Value = self.bulb.is_on * 2
         else:
-            brightness = self.bulb.is_on * 100
+            self.brightness = self.bulb.is_on * 100
             device_type = 'Switch'
             n_Value = self.bulb.is_on * 1
         if len(Devices) < 1:
             Domoticz.Device(Name=device_type, Description=self.bulb.model, Unit=1, Type=device_type, Image=1, Used=1).Create()
         else:
-            Devices[1].Update(nValue = n_Value, sValue = str(brightness), TypeName=device_type, Description=self.bulb.model, Used=1)
+            Devices[1].Update(nValue = n_Value, sValue = str(self.brightness), TypeName=device_type, Description=self.bulb.model, Used=1)
 
         if self.bulb.has_emeter:
             if len(Devices) < 2:
@@ -113,25 +115,29 @@ class TpLinkPlugin:
         Domoticz.Log("onMessage called")
 
     def onCommand(self, unit, command, level, hue):
+        command = command.lower()
         if self.alive:
             Domoticz.Log("onCommand called for Unit " +
                      str(unit) + ": Parameter '" + str(command) + "', Level: " + str(level))
             n_Value = 0
             okay = False
             try:
-                if command.lower() == 'on':
+                if command == 'on':
                     self.bulb.turn_on()
                     okay = self.bulb.is_on
                     n_Value = 1
                     if self.bulb.is_dimmable:
+                        self.bulb.set_brightness(self.brightness)
                         n_Value = 2
-                elif command.lower() == 'off':
+                elif command == 'off':
                     self.bulb.turn_off()
                     okay = self.bulb.is_off
-                elif command.lower() == 'set level':
+                elif command == 'set level':
                     if self.bulb.is_off:
                         self.bulb.turn_on()
+                        time.sleep(5)
                     self.bulb.set_brightness(level)
+                    self.brightness = level
                     okay = self.bulb.is_on
                     n_Value = 2
             except:
@@ -151,23 +157,23 @@ class TpLinkPlugin:
 
     def onHeartbeat(self):
         if self.alive:
-            if (self.heartbeatcounter % self.interval == 0) and self.bulb.has_emeter:
-                try:
+            try:
+                if (self.heartbeatcounter % self.interval == 0) and self.bulb.has_emeter:
                     realtime_result = self.bulb.get_emeter_realtime()
-                except:
-                    self.alive = False
-                    return
-                if realtime_result is not False:
-                    Domoticz.Log("power consumption: " + str(realtime_result['power_mw'] / 1000) + "W")
-                    Devices[2].Update(nValue=0, sValue=str(realtime_result['power_mw'] / 1000))
-            self.heartbeatcounter += 1
-            if self.bulb.is_dimmable:
-                brightness = self.bulb.brightness
-                n_Value = self.bulb.is_on * 2
-            else:
-                brightness = self.bulb.is_on * 100
-                n_Value = self.bulb.is_on * 1
-            Devices[1].Update(nValue=n_Value, sValue=str(brightness))
+                    if realtime_result is not False:
+                        Domoticz.Log("power consumption: " + str(realtime_result['power_mw'] / 1000) + "W")
+                        Devices[2].Update(nValue=0, sValue=str(realtime_result['power_mw'] / 1000))
+                self.heartbeatcounter += 1
+                if self.bulb.is_dimmable:
+                    self.brightness = self.bulb.brightness
+                    n_Value = self.bulb.is_on * 2
+                else:
+                    self.brightness = self.bulb.is_on * 100
+                    n_Value = self.bulb.is_on * 1
+                Devices[1].Update(nValue=n_Value, sValue=str(self.brightness))
+            except:
+                self.alive = False
+                return
         else:
             Devices[1].Update(nValue=0, sValue="Unavailable")
             onStart()
