@@ -64,6 +64,7 @@ class TpLinkPlugin:
     enabled = False
     alive = False
     brightness = 0
+    color = False
 
     def __init__(self):
         self.interval = 6  # 6*10 seconds
@@ -89,6 +90,8 @@ class TpLinkPlugin:
             self.brightness = self.bulb.is_on * 100
             device_type = 'Switch'
             n_Value = self.bulb.is_on * 1
+        if self.bulb.is_color:
+            self.color = True
         if len(Devices) < 1:
             Domoticz.Device(Name=device_type, Description=self.bulb.model, Unit=1, Type=device_type, Image=1, Used=1).Create()
         else:
@@ -141,10 +144,11 @@ class TpLinkPlugin:
                     okay = self.bulb.is_on
                     n_Value = 2
             except:
+                Domoticz.Log("failed command execution, disabling")
                 self.alive = False
                 return
 
-            if okay is True:
+            if okay:
                 Devices[unit].Update(nValue = n_Value, sValue=str(level))
                 # Reset counter so we trigger emeter poll next heartbeat
                 self.heartbeatcounter = 0
@@ -172,6 +176,7 @@ class TpLinkPlugin:
                     n_Value = self.bulb.is_on * 1
                 Devices[1].Update(nValue=n_Value, sValue=str(self.brightness))
             except:
+                Domoticz.Log("failed heartbeat, disabling")
                 self.alive = False
                 return
         else:
