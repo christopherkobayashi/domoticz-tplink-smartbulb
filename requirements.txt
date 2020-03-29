@@ -1,3 +1,0 @@
-click
-click-datetime
-pre-commit
