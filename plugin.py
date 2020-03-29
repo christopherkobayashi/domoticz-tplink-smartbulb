@@ -95,9 +95,9 @@ class TpLinkPlugin:
 
         if Devices[1]:
             if self.bulb.is_dimmable:
-                Devices[1].Update(nValue=0, sValue = str(self.brightness), Description=self.bulb.model, Type=244, Subtype=73, Switchtype=7, Image=1, Used=1)
+                Devices[1].Update(nValue=n_Value, sValue = str(self.brightness), Description=self.bulb.model, Type=244, Subtype=73, Switchtype=7, Image=1, Used=1)
             else:
-                Devices[1].Update(nValue=0, sValue = str(self.brightness), TypeName='Switch', Image=1, Used=1)
+                Devices[1].Update(nValue=n_Value, sValue = str(self.brightness), TypeName='Switch', Image=1, Used=1)
         else:
             if self.bulb.is_dimmable:
                 Domoticz.Device(Name='Dimmer', Description=self.bulb.model, Unit=1,  Type=244, Subtype=73, Switchtype=7, Image=1, Used=1).Create()
