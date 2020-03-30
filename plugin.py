@@ -93,27 +93,23 @@ class TpLinkPlugin:
         if self.bulb.is_color:
             self.color = True
 
-        if Devices[1]:
+        # if devices exist, then just update
+        if not Devices:
             if self.bulb.is_dimmable:
-                Devices[1].Update(nValue=n_Value, sValue = str(self.brightness), Description=self.bulb.model, Type=244, Subtype=73, Switchtype=7, Image=1, Used=1)
+                Domoticz.Device(Name='Dimmer', Description=self.bulb.model, Unit=1,  Type=244, Subtype=73, Switchtype=7, Image=0, Used=1).Create()
             else:
-                Devices[1].Update(nValue=n_Value, sValue = str(self.brightness), TypeName='Switch', Image=1, Used=1)
-        else:
-            if self.bulb.is_dimmable:
-                Domoticz.Device(Name='Dimmer', Description=self.bulb.model, Unit=1,  Type=244, Subtype=73, Switchtype=7, Image=1, Used=1).Create()
-            else:
-                Domoticz.Device(Name='Switch', Description=self.bulb.model, Unit=1, TypeName='Switch', Image=1, Used=1).Create()
+                Domoticz.Device(Name='Switch', Description=self.bulb.model, Unit=1, TypeName='Switch', Image=0, Used=1).Create()
+            if self.bulb.has_emeter:
+                realtime_result = self.bulb.get_emeter_realtime()
+                Domoticz.Device(Name="power consumed (watts)", Unit=2, TypeName='kWh', Image=1, Used=1).Create()
 
+        if self.bulb.is_dimmable:
+            Devices[1].Update(nValue=n_Value, sValue = str(self.brightness), Description=self.bulb.model, Type=244, Subtype=73, Switchtype=7, Image=0, Used=1)
+        else:
+            Devices[1].Update(nValue=n_Value, sValue = str(self.brightness), TypeName='Switch', Image=0, Used=1)
         if self.bulb.has_emeter:
             realtime_result = self.bulb.get_emeter_realtime()
-            if Devices[2]:
-              Devices[2].Update(nValue=0, sValue=str(realtime_result['power_mw'] / 1000), TypeName='kWh', Image=1, Used=1)
-            else:
-              Domoticz.Device(Name="power consumed (watts)", Unit=2, TypeName='kWh', Image=1, Used=1).Create()
-
-        # Clean up unused
-        if Devices[3]:
-            Devices[3].Delete()
+            Devices[2].Update(nValue=0, sValue=str(realtime_result['power_mw'] / 1000), TypeName='kWh', Image=1, Used=1)
 
     def onStop(self):
         Domoticz.Log("onStop called")
@@ -188,7 +184,8 @@ class TpLinkPlugin:
                 self.alive = False
                 return
         else:
-            Devices[1].Update(nValue=0, sValue="Unavailable")
+            if Devices:
+                Devices[1].Update(nValue=0, sValue="Unavailable")
             onStart()
 
 global _plugin
